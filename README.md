@@ -1,7 +1,5 @@
 # BitNet b1.58 Reproduction from Scratch
 
-A small, interview-defensible reproduction of **BitNet b1.58**: a tiny Transformer trained from scratch with **ternary weights** in its linear layers, compared against a same-size full-precision baseline.
-
 This repo implements the **core algorithmic idea** from [*The Era of 1-bit LLMs: All Large Language Models are in 1.58 Bits*](https://arxiv.org/abs/2402.17764): replace standard linear layers with a custom **BitLinear** layer whose effective weights are constrained to **{-1, 0, +1}** via **absmean ternary quantization**, trained with a **straight-through estimator (STE)**.
 
 ## What this repo is (and is not)
