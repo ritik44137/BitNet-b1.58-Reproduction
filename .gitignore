@@ -1,0 +1,56 @@
+# Planning / private docs (not part of the public repo)
+docs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Tooling / IDE
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Data & checkpoints (regenerated locally)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+*.pt
+*.pth
+*.bin
+*.ckpt
+checkpoints/
+runs/
+wandb/
+mlruns/
+
+# Results artifacts (keep directory structure via .gitkeep)
+results/figures/*
+!results/figures/.gitkeep
+results/tables/*
+!results/tables/.gitkeep
+results/samples/*
+!results/samples/.gitkeep
+*.csv
+*.jsonl
+!configs/**
+
+# Logs
+*.log
+logs/
