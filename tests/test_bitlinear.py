@@ -1,38 +1,90 @@
-"""Sanity tests for quantization and BitLinear (to be filled in during Day 2)."""
+"""Sanity tests for quantization and BitLinear."""
 
 from __future__ import annotations
 
 import pytest
 import torch
+import torch.nn as nn
+
+from src.layers.bitlinear import BitLinear
+from src.layers.quantization import absmean_scale, ste_ternary_weight, ternary_quantize
 
 
-@pytest.mark.skip(reason="Implement absmean + ternary quantization first")
+def test_absmean_scale_matches_mean_abs():
+    w = torch.tensor([[-2.0, 0.0], [4.0, -2.0]])
+    assert absmean_scale(w).item() == pytest.approx(2.0)
+
+
+def test_absmean_scale_clamps_eps():
+    w = torch.zeros(4, 4)
+    assert absmean_scale(w, eps=1e-5).item() == pytest.approx(1e-5)
+
+
 def test_ternary_values_only():
-    from src.layers.quantization import ternary_quantize
-
     w = torch.randn(16, 8)
-    q, _scale = ternary_quantize(w)
+    q, scale = ternary_quantize(w)
     unique = set(q.unique().tolist())
     assert unique.issubset({-1.0, 0.0, 1.0})
+    assert scale.ndim == 0
+    assert scale.item() > 0
 
 
-@pytest.mark.skip(reason="Implement BitLinear.forward first")
+def test_ternary_quantize_known_values():
+    # scale = mean(|w|) = 1.5
+    # normalized = [-4/3, -2/3, 0, 2/3, 4/3, 2] -> round+clip = [-1, -1, 0, 1, 1, 1]
+    w = torch.tensor([-2.0, -1.0, 0.0, 1.0, 2.0, 3.0])
+    q, scale = ternary_quantize(w)
+    assert scale.item() == pytest.approx(1.5)
+    assert torch.equal(q, torch.tensor([-1.0, -1.0, 0.0, 1.0, 1.0, 1.0]))
+
+
+def test_ste_forward_equals_quantized():
+    w = torch.randn(8, 4, requires_grad=True)
+    q, scale = ternary_quantize(w)
+    expected = q * scale
+    actual = ste_ternary_weight(w)
+    assert torch.allclose(actual, expected)
+
+
+def test_ste_backward_reaches_master_weights():
+    w = torch.randn(8, 4, requires_grad=True)
+    w_eff = ste_ternary_weight(w)
+    w_eff.sum().backward()
+    assert w.grad is not None
+    assert torch.isfinite(w.grad).all()
+    # Identity-like STE: d(sum)/dw should be ones
+    assert torch.allclose(w.grad, torch.ones_like(w))
+
+
 def test_bitlinear_shape_matches_linear():
-    from src.layers.bitlinear import BitLinear
-
     x = torch.randn(4, 8)
     layer = BitLinear(8, 16)
     y = layer(x)
     assert y.shape == (4, 16)
+    assert y.shape == nn.Linear(8, 16)(x).shape
 
 
-@pytest.mark.skip(reason="Implement STE path first")
-def test_bitlinear_gradients_finite():
-    from src.layers.bitlinear import BitLinear
-
+def test_bitlinear_quantized_weight_ternary():
     layer = BitLinear(8, 16)
-    x = torch.randn(4, 8, requires_grad=True)
+    q, scale, w_q = layer.quantized_weight()
+    assert set(q.unique().tolist()).issubset({-1.0, 0.0, 1.0})
+    assert torch.allclose(w_q, q * scale)
+
+
+def test_bitlinear_gradients_finite():
+    layer = BitLinear(8, 16)
+    x = torch.randn(4, 8)
     y = layer(x).sum()
     y.backward()
     assert layer.weight.grad is not None
     assert torch.isfinite(layer.weight.grad).all()
+    if layer.bias is not None:
+        assert layer.bias.grad is not None
+        assert torch.isfinite(layer.bias.grad).all()
+
+
+def test_bitlinear_no_bias():
+    layer = BitLinear(8, 16, bias=False)
+    y = layer(torch.randn(2, 8))
+    assert y.shape == (2, 16)
+    assert layer.bias is None

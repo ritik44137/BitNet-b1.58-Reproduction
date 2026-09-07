@@ -47,11 +47,17 @@ class BitLinear(nn.Module):
             nn.init.uniform_(self.bias, -bound, bound)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # TODO: w_eff = ste_ternary_weight(self.weight, self.eps); return F.linear(...)
-        raise NotImplementedError("Wire ste_ternary_weight into F.linear")
+        w_eff = ste_ternary_weight(self.weight, self.eps)
+        return F.linear(x, w_eff, self.bias)
 
     @torch.no_grad()
     def quantized_weight(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return ``(q, scale, q * scale)`` for inspection / logging."""
-        # TODO: return ternary_quantize result and scaled weights
-        raise NotImplementedError("Expose q, scale, and scaled ternary weights")
+        q, scale = ternary_quantize(self.weight, self.eps)
+        return q, scale, q * scale
+
+    def extra_repr(self) -> str:
+        return (
+            f"in_features={self.in_features}, out_features={self.out_features}, "
+            f"bias={self.bias is not None}, eps={self.eps}"
+        )
