@@ -9,6 +9,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from src.layers.bitlinear import BitLinear
+
 
 @dataclass
 class TinyTransformerConfig:
@@ -37,10 +39,7 @@ def make_linear(
     bias: bool = True,
     use_bitlinear: bool = False,
 ) -> nn.Module:
-    """Factory used by both baseline and BitNet models for architecture parity."""
     if use_bitlinear:
-        from src.layers.bitlinear import BitLinear
-
         return BitLinear(in_dim, out_dim, bias=bias)
     return nn.Linear(in_dim, out_dim, bias=bias)
 
@@ -48,9 +47,7 @@ def make_linear(
 class CausalSelfAttention(nn.Module):
     def __init__(self, config: TinyTransformerConfig) -> None:
         super().__init__()
-        assert config.n_embd % config.n_head == 0
         bit_attn = config.use_bitlinear and config.bitlinear_on_attention
-
         self.n_head = config.n_head
         self.n_embd = config.n_embd
         self.head_dim = config.n_embd // config.n_head
@@ -66,9 +63,7 @@ class CausalSelfAttention(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         b, t, c = x.size()
-        qkv = self.c_attn(x)
-        q, k, v = qkv.split(self.n_embd, dim=2)
-
+        q, k, v = self.c_attn(x).split(self.n_embd, dim=2)
         q = q.view(b, t, self.n_head, self.head_dim).transpose(1, 2)
         k = k.view(b, t, self.n_head, self.head_dim).transpose(1, 2)
         v = v.view(b, t, self.n_head, self.head_dim).transpose(1, 2)
@@ -118,7 +113,7 @@ class Block(nn.Module):
 
 
 class TinyTransformer(nn.Module):
-    """Tiny decoder-only LM. Attention/MLP/LM-head linears go through ``make_linear``."""
+    """Decoder-only LM; projection layers are created through ``make_linear``."""
 
     def __init__(self, config: TinyTransformerConfig) -> None:
         super().__init__()
@@ -141,49 +136,37 @@ class TinyTransformer(nn.Module):
         )
 
         self.apply(self._init_weights)
-        # Scale residual projection init like GPT-2
         for pn, p in self.named_parameters():
             if pn.endswith("c_proj.weight"):
                 nn.init.normal_(p, mean=0.0, std=0.02 / (2 * config.n_layer) ** 0.5)
 
     @staticmethod
     def _init_weights(module: nn.Module) -> None:
-        if isinstance(module, nn.Linear):
+        if isinstance(module, (nn.Linear, BitLinear)):
             nn.init.normal_(module.weight, mean=0.0, std=0.02)
             if module.bias is not None:
                 nn.init.zeros_(module.bias)
         elif isinstance(module, nn.Embedding):
             nn.init.normal_(module.weight, mean=0.0, std=0.02)
-        else:
-            # BitLinear is not a subclass of nn.Linear; init its master weight similarly.
-            from src.layers.bitlinear import BitLinear
-
-            if isinstance(module, BitLinear):
-                nn.init.normal_(module.weight, mean=0.0, std=0.02)
-                if module.bias is not None:
-                    nn.init.zeros_(module.bias)
 
     def forward(
         self,
         idx: torch.Tensor,
         targets: Optional[torch.Tensor] = None,
     ) -> tuple[torch.Tensor, Optional[torch.Tensor]]:
-        device = idx.device
         _, t = idx.size()
         if t > self.config.block_size:
             raise ValueError(
                 f"Sequence length {t} exceeds block_size {self.config.block_size}"
             )
 
-        pos = torch.arange(0, t, dtype=torch.long, device=device)
-
-        tok_emb = self.transformer.wte(idx)
-        pos_emb = self.transformer.wpe(pos)
-        x = self.transformer.drop(tok_emb + pos_emb)
+        pos = torch.arange(0, t, dtype=torch.long, device=idx.device)
+        x = self.transformer.drop(
+            self.transformer.wte(idx) + self.transformer.wpe(pos)
+        )
         for block in self.transformer.h:
             x = block(x)
-        x = self.transformer.ln_f(x)
-        logits = self.lm_head(x)
+        logits = self.lm_head(self.transformer.ln_f(x))
 
         loss = None
         if targets is not None:
@@ -219,6 +202,4 @@ class TinyTransformer(nn.Module):
         return idx
 
     def count_bitlinear_modules(self) -> int:
-        from src.layers.bitlinear import BitLinear
-
         return sum(1 for m in self.modules() if isinstance(m, BitLinear))

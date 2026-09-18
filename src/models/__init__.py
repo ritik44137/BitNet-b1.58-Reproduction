@@ -1,5 +1,6 @@
 """Model constructors for baseline and BitNet-style transformers."""
 
+from src.models.build import build_model_from_config
 from src.models.transformer_baseline import (
     TinyTransformer,
     TinyTransformerConfig,
@@ -13,4 +14,5 @@ __all__ = [
     "TinyBitNetTransformer",
     "TinyBitNetConfig",
     "make_linear",
+    "build_model_from_config",
 ]

@@ -1,4 +1,4 @@
-"""Drop-in BitLinear: full-precision master weights, ternary effective forward."""
+"""BitLinear: nn.Linear-compatible layer with ternary effective weights."""
 
 from __future__ import annotations
 
@@ -12,12 +12,7 @@ from src.layers.quantization import ste_ternary_weight, ternary_quantize
 
 
 class BitLinear(nn.Module):
-    """Linear layer with absmean ternary weight quantization + STE training.
-
-    Matches ``nn.Linear`` closely enough to be used as a drop-in replacement for
-    attention and MLP projections. Master ``weight`` stays full precision;
-    the forward pass uses a quantized ternary proxy.
-    """
+    """Stores fp32 master weights; forward matmul uses absmean-ternary weights."""
 
     def __init__(
         self,
@@ -47,12 +42,10 @@ class BitLinear(nn.Module):
             nn.init.uniform_(self.bias, -bound, bound)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        w_eff = ste_ternary_weight(self.weight, self.eps)
-        return F.linear(x, w_eff, self.bias)
+        return F.linear(x, ste_ternary_weight(self.weight, self.eps), self.bias)
 
     @torch.no_grad()
     def quantized_weight(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Return ``(q, scale, q * scale)`` for inspection / logging."""
         q, scale = ternary_quantize(self.weight, self.eps)
         return q, scale, q * scale
 

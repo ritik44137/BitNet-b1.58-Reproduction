@@ -6,13 +6,13 @@ model:
   n_embd: 256
   n_head: 4
   block_size: 256
-  vocab_size: null  # filled after tokenizer / dataset prep
+  vocab_size: null
   dropout: 0.1
   bias: true
   use_bitlinear: true
   bitlinear_on_attention: true
   bitlinear_on_mlp: true
-  quantize_lm_head: false  # keep LM head full precision initially
+  quantize_lm_head: false
 
 data:
   dataset: tinyshakespeare
@@ -33,7 +33,7 @@ train:
   grad_clip: 1.0
   warmup_steps: 100
   amp: false
-  device: cuda  # or cpu / mps
+  device: cpu
   out_dir: runs/bitnet_tiny
 
 logging:

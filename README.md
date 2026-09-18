@@ -1,103 +1,102 @@
 # BitNet b1.58 Reproduction from Scratch
 
-This repo implements the **core algorithmic idea** from [*The Era of 1-bit LLMs: All Large Language Models are in 1.58 Bits*](https://arxiv.org/abs/2402.17764): replace standard linear layers with a custom **BitLinear** layer whose effective weights are constrained to **{-1, 0, +1}** via **absmean ternary quantization**, trained with a **straight-through estimator (STE)**.
+Small-scale reproduction of the core training idea from
+[*The Era of 1-bit LLMs: All Large Language Models are in 1.58 Bits*](https://arxiv.org/abs/2402.17764).
 
-## What this repo is (and is not)
+Train a tiny decoder-only Transformer on Tiny Shakespeare with ordinary
+`nn.Linear` layers, then train the same architecture again with attention and
+MLP projections swapped for `BitLinear`. On the forward pass, each weight
+matrix is absmean-scaled and rounded to `{-1, 0, +1}`; a straight-through
+estimator keeps gradients flowing to the full-precision master weights.
 
-**Aims to show**
+This repo targets the **algorithm**, not packed 1.58-bit kernels. Do not expect
+the paper's wall-clock speedups from plain PyTorch.
 
-- absmean ternary quantization
-- a drop-in `BitLinear` module
-- a controlled baseline vs BitNet-style comparison
-- honest reporting of loss, theoretical memory, runtime, and samples
-- a clear faithful-vs-simplified writeup
-
-**Does not claim**
-
-- packed 1.58-bit storage in the PyTorch path
-- paper-level low-bit throughput/latency from standard `torch.matmul`
-- that a tiny run proves large-scale LLM scaling behavior
+Latest numbers: [RESULTS.md](RESULTS.md).
 
 ## Setup
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
 pip install -r requirements.txt
+export PYTHONPATH=.
+python data/prepare_dataset.py
 ```
 
-## Suggested workflow
+## Train
 
 ```bash
-# Prepare data
-python data/prepare_dataset.py --config configs/baseline_tiny.yaml
-
-# Train
 bash scripts/run_baseline.sh
 bash scripts/run_bitnet.sh
 
-# Evaluate / benchmark / sample
-python -m src.evaluate --checkpoint path/to/checkpoint.pt --split val
-python -m src.benchmark --config configs/baseline_tiny.yaml
-python -m src.sample --checkpoint path/to/checkpoint.pt --prompt "Once upon a time"
+# full pipeline: train → eval → sample → benchmark → plots
+bash scripts/run_all.sh
+```
 
-# Or run all benchmarks
+Smoke configs: `configs/overfit_*.yaml`.
+
+## Eval / sample / benchmark
+
+```bash
+python -m src.evaluate --checkpoint runs/baseline_tiny/ckpt_best.pt --split val
+python -m src.evaluate --checkpoint runs/bitnet_tiny/ckpt_best.pt --split val
+
+python -m src.sample --checkpoint runs/baseline_tiny/ckpt_best.pt
+python -m src.sample --checkpoint runs/bitnet_tiny/ckpt_best.pt
+
 bash scripts/benchmark_all.sh
+python -m src.report
 ```
 
-## Repository layout
-
-```
-.
-├── README.md
-├── requirements.txt
-├── configs/
-│   ├── baseline_tiny.yaml
-│   └── bitnet_tiny.yaml
-├── data/
-│   └── prepare_dataset.py
-├── src/
-│   ├── layers/
-│   │   ├── quantization.py
-│   │   └── bitlinear.py
-│   ├── models/
-│   │   ├── transformer_baseline.py
-│   │   └── transformer_bitnet.py
-│   ├── train.py
-│   ├── evaluate.py
-│   ├── benchmark.py
-│   ├── sample.py
-│   └── utils/
-├── scripts/
-├── results/
-└── tests/
-```
-
-## Core idea
-
-```
-s = mean(abs(W))
-Q = clip(round(W / s), -1, 1)
-W_q = s * Q
-```
-
-STE training pattern:
+## BitLinear in one line
 
 ```python
-w_eff = w + (quantize(w) - w).detach()
+w_eff = w + (quantize(w) - w).detach()  # forward: s*Q, backward: updates w
+```
+
+where `s = mean(|W|)` and `Q = clip(round(W / s), -1, 1)`.
+
+Embeddings, LayerNorms, and the LM head stay full precision by default.
+
+## Layout
+
+```
+configs/     baseline + BitNet (+ overfit) YAML
+data/        Tiny Shakespeare download / tokenize
+src/layers/  absmean ternary quant + BitLinear
+src/models/  shared tiny Transformer (make_linear)
+src/*.py     train / evaluate / sample / benchmark / report
+scripts/     thin wrappers
+tests/
+results/     tables, figures, samples
+```
+
+## Scope
+
+| Area | Match? |
+| --- | --- |
+| Ternary weights via absmean | yes |
+| STE training | yes |
+| Same-size dense baseline | yes |
+| Large-scale LLM training | no |
+| Packed ternary storage | no |
+| Custom low-bit matmul | no |
+
+## Tests
+
+```bash
+PYTHONPATH=. python -m pytest -q
 ```
 
 ## References
 
 - Ma et al., [The Era of 1-bit LLMs](https://arxiv.org/abs/2402.17764)
-- [Oxen.ai ArXiv Dives walkthrough](https://www.oxen.ai/blog/arxiv-dives-bitnet-1-58)
+- [Oxen.ai BitLinear walkthrough](https://www.oxen.ai/blog/arxiv-dives-bitnet-1-58)
 
-## Status
-
-Skeleton only — modules are stubs. Implement in this order:
-
-1. `src/layers/quantization.py`
-2. `src/layers/bitlinear.py`
-3. sanity tests
-4. Transformer linear-factory integration
-5. training / eval / benchmark pipelines
+```bibtex
+@article{ma2024era,
+  title={The Era of 1-bit LLMs: All Large Language Models are in 1.58 Bits},
+  author={Ma, Shuming and Wang, Hongyu and Ma, Lingxiao and Wang, Lei and Wang, Wenhui and Huang, Shaohan and Dong, Li and Wang, Ruiping and Xue, Jilong and Wei, Furu},
+  journal={arXiv preprint arXiv:2402.17764},
+  year={2024}
+}
+```

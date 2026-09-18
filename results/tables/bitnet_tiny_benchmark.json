@@ -1,0 +1,30 @@
+{
+  "model": "bitnet_tiny",
+  "config": "configs/bitnet_tiny.yaml",
+  "hardware": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.10.12",
+    "torch": "2.13.0+cpu",
+    "device": "cpu",
+    "cpu": "x86_64"
+  },
+  "params": {
+    "n_params": 3258368.0,
+    "ternary_eligible_params": 3145728.0,
+    "dense_params": 112640.0,
+    "fp32_bits": 104267776.0,
+    "fp16_bits": 52133888.0,
+    "ideal_ternary_bits": 4985860.917468561,
+    "reported_weight_bits": 8590340.91746856
+  },
+  "train_step_ms": 1437.6163898400046,
+  "train_tokens_per_sec": 5698.321233602314,
+  "warmup_steps": 10,
+  "measure_steps": 50,
+  "peak_runtime_memory_bytes": null,
+  "infer_latency_s": 0.7444941701996868,
+  "infer_tokens_per_sec": 85.96440719318734,
+  "infer_trials": 5,
+  "prompt_tokens": 64,
+  "gen_tokens": 64
+}

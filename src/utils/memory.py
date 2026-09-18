@@ -8,18 +8,14 @@ from typing import Mapping
 import torch
 import torch.nn as nn
 
+from src.layers.bitlinear import BitLinear
 
-def theoretical_weight_bits(
-    n_params: int,
-    *,
-    bits_per_param: float,
-) -> float:
-    """Return total bits for ``n_params`` at ``bits_per_param`` (e.g. 32, 16, ~1.58)."""
+
+def theoretical_weight_bits(n_params: int, *, bits_per_param: float) -> float:
     return float(n_params) * float(bits_per_param)
 
 
 def ternary_bits_per_param() -> float:
-    """Ideal packed ternary storage: log2(3) ≈ 1.58 bits per weight."""
     return math.log2(3)
 
 
@@ -28,16 +24,31 @@ def count_parameters(module: nn.Module) -> int:
 
 
 def summarize_param_memory(module: nn.Module) -> Mapping[str, float]:
-    """Stub summary separating theoretical ternary vs dense storage.
+    """Split BitLinear weights from dense params for theoretical storage.
 
-    TODO: split ternary-eligible vs always-full-precision parameter groups.
+    Training still keeps full-precision master weights. ``reported_weight_bits``
+    assumes BitLinear weights could be packed at log2(3) bits while all other
+    parameters stay fp32.
     """
-    n = count_parameters(module)
+    ternary_weight_params = sum(
+        m.weight.numel() for m in module.modules() if isinstance(m, BitLinear)
+    )
+    total = count_parameters(module)
+    dense_params = total - ternary_weight_params
+
     return {
-        "n_params": float(n),
-        "fp32_bits": theoretical_weight_bits(n, bits_per_param=32),
-        "fp16_bits": theoretical_weight_bits(n, bits_per_param=16),
-        "ideal_ternary_bits": theoretical_weight_bits(n, bits_per_param=ternary_bits_per_param()),
+        "n_params": float(total),
+        "ternary_eligible_params": float(ternary_weight_params),
+        "dense_params": float(dense_params),
+        "fp32_bits": theoretical_weight_bits(total, bits_per_param=32),
+        "fp16_bits": theoretical_weight_bits(total, bits_per_param=16),
+        "ideal_ternary_bits": theoretical_weight_bits(
+            ternary_weight_params, bits_per_param=ternary_bits_per_param()
+        ),
+        "reported_weight_bits": theoretical_weight_bits(
+            ternary_weight_params, bits_per_param=ternary_bits_per_param()
+        )
+        + theoretical_weight_bits(dense_params, bits_per_param=32),
     }
 
 

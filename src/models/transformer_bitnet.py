@@ -1,4 +1,4 @@
-"""BitNet-style tiny Transformer: attention/MLP projections use BitLinear."""
+"""BitNet-style tiny Transformer with ternary attention/MLP projections."""
 
 from __future__ import annotations
 
@@ -9,8 +9,6 @@ from src.models.transformer_baseline import TinyTransformer, TinyTransformerConf
 
 @dataclass
 class TinyBitNetConfig(TinyTransformerConfig):
-    """Config defaults for the BitNet variant; same architecture as the baseline."""
-
     use_bitlinear: bool = True
     bitlinear_on_attention: bool = True
     bitlinear_on_mlp: bool = True
@@ -18,10 +16,7 @@ class TinyBitNetConfig(TinyTransformerConfig):
 
 
 class TinyBitNetTransformer(TinyTransformer):
-    """Same model as ``TinyTransformer``; BitNet flags default to ternary projections.
-
-    Embeddings, LayerNorm, and (by default) the LM head stay full precision.
-    """
+    """Same architecture as the baseline; BitLinear flags default to on."""
 
     def __init__(self, config: TinyBitNetConfig | TinyTransformerConfig) -> None:
         if not isinstance(config, TinyBitNetConfig):

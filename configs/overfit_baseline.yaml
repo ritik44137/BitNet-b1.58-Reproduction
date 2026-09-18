@@ -1,0 +1,41 @@
+# Small smoke configs for debugging (same architecture for both).
+
+model:
+  name: overfit_baseline
+  n_layer: 2
+  n_embd: 64
+  n_head: 4
+  block_size: 64
+  vocab_size: null
+  dropout: 0.0
+  bias: true
+  use_bitlinear: false
+  bitlinear_on_attention: false
+  bitlinear_on_mlp: false
+  quantize_lm_head: false
+
+data:
+  dataset: tinyshakespeare
+  data_dir: data/processed
+  train_split: 0.9
+  seq_len: 64
+
+train:
+  seed: 42
+  batch_size: 8
+  max_steps: 200
+  eval_interval: 50
+  sample_interval: 200
+  learning_rate: 1.0e-3
+  weight_decay: 0.0
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip: 1.0
+  warmup_steps: 10
+  amp: false
+  device: cpu
+  out_dir: runs/overfit_baseline
+
+logging:
+  log_dir: runs/overfit_baseline/logs
+  log_quantization_stats: false

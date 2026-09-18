@@ -1,0 +1,30 @@
+{
+  "model": "baseline_tiny",
+  "config": "configs/baseline_tiny.yaml",
+  "hardware": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.10.12",
+    "torch": "2.13.0+cpu",
+    "device": "cpu",
+    "cpu": "x86_64"
+  },
+  "params": {
+    "n_params": 3258368.0,
+    "ternary_eligible_params": 0.0,
+    "dense_params": 3258368.0,
+    "fp32_bits": 104267776.0,
+    "fp16_bits": 52133888.0,
+    "ideal_ternary_bits": 0.0,
+    "reported_weight_bits": 104267776.0
+  },
+  "train_step_ms": 1406.9564304400046,
+  "train_tokens_per_sec": 5822.4972875940975,
+  "warmup_steps": 10,
+  "measure_steps": 50,
+  "peak_runtime_memory_bytes": null,
+  "infer_latency_s": 0.38046358120009244,
+  "infer_tokens_per_sec": 168.21583763188437,
+  "infer_trials": 5,
+  "prompt_tokens": 64,
+  "gen_tokens": 64
+}

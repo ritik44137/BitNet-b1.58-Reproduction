@@ -1,0 +1,47 @@
+# samples from runs/bitnet_tiny/ckpt_best.pt (bitnet_tiny)
+
+## prompt
+First Citizen:
+
+
+## completion
+First Citizen:
+The would the mast she be the she take sirve and me agand
+The erperces upont thou that arcitys and of all
+Your be that kapul a booke wordme of my fath
+
+## prompt
+ROMEO:
+
+
+## completion
+ROMEO:
+Secaon thy his heattak, hered so my butt
+thing age combry is and is eas may many
+And brood the in more for with sine.
+
+Sirst:
+Were to wich mat of this
+
+## prompt
+To be, or not to be,
+
+## completion
+To be, or not to be, meir you proved;
+I'll and of wild sail puit to im;
+Come it heour in on hat mine the not you,
+And have have of come that shilly stall mon.
+
+POMERY LIZ
+
+## prompt
+O, for a muse of fire
+
+## completion
+O, for a muse of fired mingn,
+The sreftor to timing arn collors the it
+The it unglanig our the I crequise.
+
+If HABENNGARE:
+And weth her at hold wond him knong be a arve
+on

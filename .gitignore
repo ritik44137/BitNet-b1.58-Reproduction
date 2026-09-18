@@ -1,4 +1,4 @@
-# Planning / private docs (not part of the public repo)
+# Planning docs stay local
 docs/
 
 # Python
@@ -26,7 +26,7 @@ htmlcov/
 *.swp
 .DS_Store
 
-# Data & checkpoints (regenerated locally)
+# Data & checkpoints
 data/raw/*
 !data/raw/.gitkeep
 data/processed/*
@@ -39,18 +39,6 @@ checkpoints/
 runs/
 wandb/
 mlruns/
-
-# Results artifacts (keep directory structure via .gitkeep)
-results/figures/*
-!results/figures/.gitkeep
-results/tables/*
-!results/tables/.gitkeep
-results/samples/*
-!results/samples/.gitkeep
-*.csv
-*.jsonl
-!configs/**
-
-# Logs
-*.log
 logs/
+*.log
+*.jsonl

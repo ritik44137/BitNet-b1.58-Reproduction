@@ -1,0 +1,50 @@
+# samples from runs/baseline_tiny/ckpt_best.pt (baseline_tiny)
+
+## prompt
+First Citizen:
+
+
+## completion
+First Citizen:
+In made but shall as to his the more some
+When more a a do thee perceive with to dumps,
+To thing of Musightes; but that a us a bout muttemen man.
+Inte
+
+## prompt
+ROMEO:
+
+
+## completion
+ROMEO:
+So to must of give to might.
+
+COFORIZEL:
+Very, my lord, you love is eyes chament
+And brother for the fordoneds time of in sperf.
+
+EXUCIO:
+That gell ma
+
+## prompt
+To be, or not to be,
+
+## completion
+To be, or not to be, I may show dead;
+I'll and of surdes to pule to impaty.
+
+JULIET:
+Sir, the to is your not your band the have of sir,
+Has counter at the heart, in me, t
+
+## prompt
+O, for a muse of fire
+
+## completion
+O, for a muse of fire will pless,
+Are to are timish a not, Presting it my mist!
+
+KING RICHARD III:
+Evers thy for prost Edward's I never at hold.
+LEONTES:
+Who should resed 
